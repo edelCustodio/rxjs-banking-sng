@@ -1,0 +1,33 @@
+
+
+<form class="search-form" [formGroup]="searchForm">
+  <mat-form-field appearance="outline">
+    <mat-label>Search</mat-label>
+    <input matInput formControlName="search" >
+  </mat-form-field>
+</form>
+
+
+<mat-card *ngFor="let transaction of filteredTransactions">
+  <mat-card-header>
+    <mat-card-title>{{ transaction.merchantName }}</mat-card-title>
+    <mat-card-subtitle>{{ transaction.merchantType }}</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="list-item-content">
+      <div class="transaction-icon">
+
+        <mat-icon>paid</mat-icon>
+      </div>
+      <div class="transaction-detail">
+        <label for="">Date: {{ transaction.date | date:'fullDate' }}</label>
+        <label for="">Amount: {{ transaction.amount | currency }}</label>
+        <label for="">Made by: {{ transaction.userName }}</label>
+        <label for="">Account Number: ...{{ transaction.accountNumber }}</label>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
+
+
+

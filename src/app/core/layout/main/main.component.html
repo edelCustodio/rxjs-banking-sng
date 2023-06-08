@@ -1,0 +1,19 @@
+<ng-container *ngIf="responsive$ | async as responsive">
+  <sbank-header [matches]="responsive.matches"></sbank-header>
+  <mat-sidenav-container>
+    <mat-sidenav
+      #sidenav="matSidenav"
+      class="mat-elevation-z8"
+      [mode]="responsive.matches ? 'over' : 'side'"
+      [opened]="!responsive.matches"
+      (openedChange)="openedChange($event)">
+        <sbank-side-nav></sbank-side-nav>
+</mat-sidenav>
+    <mat-sidenav-content>
+      <div class="content ">
+        <router-outlet></router-outlet>
+      </div>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</ng-container>
+

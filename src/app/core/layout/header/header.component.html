@@ -1,0 +1,15 @@
+
+  <mat-toolbar>
+    <ng-container *ngIf="sideNav$ | async as sidenav">
+      <button
+      mat-icon-button
+      *ngIf="matches"
+      (click)="sidenav.toggle()">
+      <mat-icon *ngIf="!sidenav.opened"> menu </mat-icon>
+      <mat-icon *ngIf="sidenav.opened"> close </mat-icon>
+    </button>
+    </ng-container>
+
+    Fake Online Banking
+</mat-toolbar>
+
