@@ -7,27 +7,29 @@
   </mat-form-field>
 </form>
 
+<ng-container *ngIf="filteredTransactions$ | async as transactions">
+  <mat-card *ngFor="let transaction of transactions">
+    <mat-card-header>
+      <mat-card-title>{{ transaction.merchantName }}</mat-card-title>
+      <mat-card-subtitle>{{ transaction.merchantType }}</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="list-item-content">
+        <div class="transaction-icon">
 
-<mat-card *ngFor="let transaction of filteredTransactions">
-  <mat-card-header>
-    <mat-card-title>{{ transaction.merchantName }}</mat-card-title>
-    <mat-card-subtitle>{{ transaction.merchantType }}</mat-card-subtitle>
-  </mat-card-header>
-  <mat-card-content>
-    <div class="list-item-content">
-      <div class="transaction-icon">
+          <mat-icon>paid</mat-icon>
+        </div>
+        <div class="transaction-detail">
+          <label for="">Date: {{ transaction.date | date:'fullDate' }}</label>
+          <label for="">Amount: {{ transaction.amount | currency }}</label>
+          <label for="">Made by: {{ transaction.userName }}</label>
+          <label for="">Account Number: ...{{ transaction.accountNumber }}</label>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</ng-container>
 
-        <mat-icon>paid</mat-icon>
-      </div>
-      <div class="transaction-detail">
-        <label for="">Date: {{ transaction.date | date:'fullDate' }}</label>
-        <label for="">Amount: {{ transaction.amount | currency }}</label>
-        <label for="">Made by: {{ transaction.userName }}</label>
-        <label for="">Account Number: ...{{ transaction.accountNumber }}</label>
-      </div>
-    </div>
-  </mat-card-content>
-</mat-card>
 
 
 

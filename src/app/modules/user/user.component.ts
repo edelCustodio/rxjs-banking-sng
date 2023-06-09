@@ -38,11 +38,11 @@ export class UserComponent implements OnInit, OnDestroy {
 
   saveUser() {
     const userUpdated = this.userForm.value as IUser;
-    this.userService.putUser(userUpdated).pipe(
-      takeUntil(this.unsubscribe$)
-    ).subscribe(() => {
-      // Additional actions
-    })
+    // this.userService.putUser(userUpdated).pipe(
+    //   takeUntil(this.unsubscribe$)
+    // ).subscribe(() => {
+    //   // Additional actions
+    // })
   }
 
   ngOnDestroy(): void {

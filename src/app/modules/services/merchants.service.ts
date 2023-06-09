@@ -1,7 +1,7 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { IMerchant, IMerchantType } from '@models/merchant';
-import { Observable, forkJoin, map } from 'rxjs';
+import { Observable, catchError, combineLatest, forkJoin, map, shareReplay, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -15,21 +15,40 @@ export class MerchantsService {
     private http: HttpClient,
   ) { }
 
-  getMerchants(): Observable<IMerchant[]> {
-    return this.http.get<IMerchant[]>(this.merchantsUrl);
-  }
+  merchants$ = this.http.get<IMerchant[]>(this.merchantsUrl)
+  .pipe(
+    shareReplay(1),
+    tap(data => console.log('Merchants: ', JSON.stringify(data))),
+    catchError(this.handleError)
+  );
 
-  getMerchantsType(): Observable<IMerchantType[]> {
-    return this.http.get<IMerchantType[]>(this.merchantsTypeUrl);
-  }
+  merchantTypes$ = this.http.get<IMerchant[]>(this.merchantsTypeUrl)
+  .pipe(
+    shareReplay(1),
+    tap(data => console.log('MerchantTypes: ', JSON.stringify(data))),
+    catchError(this.handleError)
+  );
 
-  getMerchantsWithType() {
-    return forkJoin([
-      this.getMerchants(),
-      this.getMerchantsType()
-    ]).pipe(map(([merchants, merchantsType]) => merchants.map((merchant: IMerchant) => ({
-      ...merchant,
-      merchantName: merchantsType.find(mt => mt.id === merchant.merchantTypeId)?.name
-    } as IMerchant))))
+  merchantsWithTypes$ = combineLatest([
+    this.merchants$,
+    this.merchantTypes$
+  ]).pipe(map(([merchants, merchantsType]) => merchants.map((merchant: IMerchant) => ({
+    ...merchant,
+    merchantName: merchantsType.find(mt => mt.id === merchant.merchantTypeId)?.name
+  } as IMerchant))));
+
+  private handleError(err: HttpErrorResponse): Observable<never> {
+
+    let errorMessage: string;
+    if (err.error instanceof ErrorEvent) {
+      // A client-side or network error occurred. Handle it accordingly.
+      errorMessage = `An error occurred: ${err.error.message}`;
+    } else {
+      // The backend returned an unsuccessful response code.
+      // The response body may contain clues as to what went wrong,
+      errorMessage = `Backend returned code ${err.status}: ${err.message}`;
+    }
+    console.error(err);
+    return throwError(() => errorMessage);
   }
 }
