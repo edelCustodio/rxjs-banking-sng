@@ -4,7 +4,7 @@ export interface ITransaction {
   id?: number;
   merchantId: number;
   amount: number;
-  userId: number;
+  userId?: number;
   transactionType: ETransactionType;
   date: string;
   accountId: number;
