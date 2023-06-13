@@ -1,8 +1,11 @@
 import { Component } from '@angular/core';
 import { TransactionsService } from '../services/transactions.service';
 import { ITransaction } from '@models/transaction';
-import { Observable, combineLatest, debounceTime, map, startWith } from 'rxjs';
+import { Observable, combineLatest, concatMap, debounceTime, map, startWith, switchMap } from 'rxjs';
 import { FormBuilder, FormControl } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { TransfersComponent } from '@modules/transfers/transfers.component';
+import { UsersService } from '@modules/services/users.service';
 
 @Component({
   selector: 'app-transactions',
@@ -21,14 +24,26 @@ export class TransactionsComponent {
 
   constructor(
     private transactionsService: TransactionsService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    public dialog: MatDialog
   ) {}
 
   filteredTransactions$: Observable<ITransaction[]> = combineLatest([
-    this.transactionsService.transactionsWithAllData$,
+    this.transactionsService.transactionsWithCRUD$,
     this.searchControl.valueChanges.pipe(startWith(''), debounceTime(1000))
   ]).pipe(
     map(([transactions, text]) => transactions.filter(t => t.merchantName?.toLowerCase().includes(text.toLowerCase())))
   );
+
+  openDialog(): void {
+    const dialogRef = this.dialog.open(TransfersComponent, {
+      data: { modal: true },
+    });
+
+    dialogRef.afterClosed().subscribe((transaction: ITransaction) => {
+      console.log('The dialog was closed', transaction);
+      this.transactionsService.addTransaction(transaction);
+    });
+  }
 
 }

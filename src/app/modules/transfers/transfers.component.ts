@@ -1,6 +1,7 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ETransactionType, ITranfer, ITransaction } from '@models/transaction';
 import { TransferService } from '@modules/services/transfer.service';
@@ -28,7 +29,9 @@ export class TransfersComponent {
     private fb: NonNullableFormBuilder,
     private transferService: TransferService,
     private userService: UsersService,
-    private router: Router
+    private router: Router,
+    public dialogRef: MatDialogRef<TransfersComponent, ITransaction>,
+    @Inject(MAT_DIALOG_DATA) public data: { modal: boolean },
   ) {}
 
 
@@ -42,10 +45,16 @@ export class TransfersComponent {
       transactionType: ETransactionType.TRANSFER
     }
 
-    this.userService.userLoggedIn$.pipe(
-      map(({user}) => ({ ...transaction, userId: user.id } as ITransaction)),
-      concatMap((transaction) => this.transferService.postTransaction(transaction)),
-      takeUntil(this.unsubscribe$)
-    ).subscribe(() => this.router.navigate(['/transactions']));
+    if (this.data.modal) {
+      this.dialogRef.close(transaction);
+    } else {
+      this.userService.userLoggedIn$.pipe(
+        map(({user}) => ({ ...transaction, userId: user.id } as ITransaction)),
+        concatMap((transaction) => this.transferService.postTransaction(transaction)),
+        takeUntil(this.unsubscribe$)
+      ).subscribe(() => this.router.navigate(['/transactions']));
+    }
+
+
   }
 }
