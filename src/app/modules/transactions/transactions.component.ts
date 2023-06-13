@@ -1,11 +1,10 @@
 import { Component } from '@angular/core';
 import { TransactionsService } from '../services/transactions.service';
 import { ITransaction } from '@models/transaction';
-import { Observable, combineLatest, concatMap, debounceTime, map, startWith, switchMap } from 'rxjs';
+import { Observable, combineLatest, debounceTime, map, startWith } from 'rxjs';
 import { FormBuilder, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TransfersComponent } from '@modules/transfers/transfers.component';
-import { UsersService } from '@modules/services/users.service';
 
 @Component({
   selector: 'app-transactions',

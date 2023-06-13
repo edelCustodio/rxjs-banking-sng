@@ -1,12 +1,15 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ITransaction } from '@models/transaction';
-import { Observable, Subject, catchError, combineLatest, concatMap, finalize, map, merge, of, scan, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, Subject, catchError, combineLatest, concatMap, finalize, map, merge, mergeMap, of, scan, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { UsersService } from './users.service';
 import { MerchantsService } from './merchants.service';
 import { AccountsService } from './accounts.service';
 import { IAction } from '@models/crud-actions';
 import { Router } from '@angular/router';
+import { IUser, IUserAccount } from '@models/user';
+import { IMerchant } from '@models/merchant';
+import { IAccount } from '@models/account';
 
 @Injectable({
   providedIn: 'root'
@@ -22,35 +25,33 @@ export class TransactionsService {
     private http: HttpClient,
     private usersService: UsersService,
     private merchantsService: MerchantsService,
-    private accountsService: AccountsService,
-    private router: Router
+    private accountsService: AccountsService
   ) { }
 
   transactions$ = this.http.get<ITransaction[]>(this.transactionsUrl)
   .pipe(
     tap(data => console.log('Transactions: ', JSON.stringify(data))),
-    catchError(this.handleError),
-    shareReplay(1),
+    catchError(this.handleError)
   );
 
-  transactionsWithAllData$ = combineLatest([
-    this.transactions$,
+  catalogs$ = combineLatest([
     this.usersService.userLoggedIn$,
     this.merchantsService.merchantsWithTypes$,
     this.accountsService.accountById$
+  ]).pipe(
+    map(([userLoggedIn, merchants, account]) => ({ userLoggedIn, merchants, account } as TCatalog)),
+    shareReplay(1)
+  )
+
+  transactionsWithAllData$ = combineLatest([
+    this.transactions$,
+    this.catalogs$
   ])
   .pipe(
-    map(([transactions, userLoggedIn, merchants, account]) => transactions.map(
-      (transaction: ITransaction) => ({
-        ...transaction,
-        userName: userLoggedIn.user.firstName,
-        merchantName: merchants.find(m => m.id === transaction.merchantId)?.name,
-        merchantType: merchants.find(m => m.id === transaction.merchantId)?.merchantName,
-        accountNumber: account.accountNumber
-      } as ITransaction)).sort((a, b) => (Date.parse((new Date(b.date).toString())) - Date.parse((new Date(a.date)).toString())))
+    map(([transactions, { userLoggedIn, merchants, account }]) => transactions.map(
+      (transaction: ITransaction) => (this.mapTransaction(transaction, userLoggedIn.user, merchants, account)))
     ),
-    tap(data => console.log('transactionsWithAllData: ', JSON.stringify(data))),
-    catchError(this.handleError)
+    tap(data => console.log('transactionsWithAllData: ', JSON.stringify(data)))
   )
 
   transactionsWithCRUD$ = merge(
@@ -59,22 +60,27 @@ export class TransactionsService {
       tap(data => console.log('transactionModifiedAction: ', JSON.stringify(data))),
       concatMap(operation => this.usersService.userLoggedIn$.pipe(map(({ user }) => ( { ...operation, item: { ...operation.item, userId: user.id } } as IAction<ITransaction>)))),
       tap(data => console.log('transactionModifiedAction with User: ', JSON.stringify(data))),
-      concatMap(operation => this.saveTransaction(operation)),
-      tap(data => console.log('saveTransaction: ', JSON.stringify(data))),
+      concatMap(operation => this.saveTransaction(operation))
     )
   ).pipe(
     scan((acc, value) => (value instanceof Array) ? [ ...value ] : this.modifyTransactions(acc, value), [] as ITransaction[]),
-    shareReplay(1),
-    tap(data => console.log('saveTransaction: ', JSON.stringify(data))),
+    map((transactions) => transactions.sort((a, b) => (Date.parse((new Date(b.date).toString())) - Date.parse((new Date(a.date)).toString())))),
+    tap(data => console.log('transactionsWithCRUD: ', JSON.stringify(data))),
   )
 
   private saveTransaction(operation: IAction<ITransaction>): Observable<IAction<ITransaction>> {
     const transaction = operation.item;
 
     if (operation.action === 'add') {
-      return this.http.post<ITransaction>(this.transactionsUrl, transaction).pipe(
-        map((transaction: ITransaction) => ({ item: transaction, action: operation.action }))
-      );
+
+      return combineLatest([
+        this.http.post<ITransaction>(this.transactionsUrl, transaction),
+        this.catalogs$,
+      ]).pipe(
+        map(([transaction, { userLoggedIn, merchants, account }]) => ({
+          item: this.mapTransaction(transaction, userLoggedIn.user, merchants, account),
+          action: operation.action } as IAction<ITransaction>))
+      )
     }
 
     /**
@@ -96,6 +102,16 @@ export class TransactionsService {
      */
 
     return transactions;
+  }
+
+  private mapTransaction(transaction: ITransaction, user: IUser, merchants: IMerchant[], account: IAccount) {
+    return {
+      ...transaction,
+      userName: user.firstName,
+      merchantName: merchants.find(m => m.id === transaction.merchantId)?.name,
+      merchantType: merchants.find(m => m.id === transaction.merchantId)?.merchantName,
+      accountNumber: account.accountNumber
+    } as ITransaction
   }
 
   addTransaction(transaction: ITransaction) {
@@ -120,6 +136,15 @@ export class TransactionsService {
     console.error(err);
     return throwError(() => errorMessage);
   }
+}
+
+type TCatalog = {
+  userLoggedIn: {
+      user: IUser;
+      userAccounts: IUserAccount[];
+  };
+  merchants: IMerchant[];
+  account: IAccount;
 }
 
 
