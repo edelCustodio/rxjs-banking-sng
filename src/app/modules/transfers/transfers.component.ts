@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, Inject, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -14,7 +14,7 @@ import { Observable, Subject, combineLatest, concatMap, fromEvent, map, takeUnti
   styleUrls: ['./transfers.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransfersComponent {
+export class TransfersComponent implements OnDestroy {
 
   unsubscribe$: Subject<void> = new Subject<void>();
 
@@ -56,5 +56,10 @@ export class TransfersComponent {
     }
 
 
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
   }
 }

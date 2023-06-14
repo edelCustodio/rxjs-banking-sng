@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { IUser, IUserAccount } from '@models/user';
-import { BehaviorSubject, Observable, Subject, catchError, combineLatest, map, mergeMap, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, catchError, combineLatest, concatMap, map, merge, mergeMap, shareReplay, switchMap, tap, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -18,14 +18,13 @@ export class UsersService {
     private http: HttpClient,
   ) { }
 
-  user$ = this.http.get<IUser>(`${this.usersUrl}/1`)
+  getUser$ = this.http.get<IUser>(`${this.usersUrl}/1`)
   .pipe(
-    shareReplay(1),
     tap(data => console.log('User: ', JSON.stringify(data))),
     catchError(this.handleError)
   );
 
-  userLoggedIn$ = this.user$
+  userLoggedIn$ = this.getUser$
   .pipe(
     switchMap((user: IUser) => this.http.get<IUserAccount[]>(`${this.userAccountsUrl}?userId=${user.id}`)
     .pipe(
@@ -35,10 +34,15 @@ export class UsersService {
     shareReplay(1)
   )
 
-
-
-  putUser$ = this.saveUser$.pipe(
-
+  user$ = merge(
+    this.getUser$,
+    this.saveUser$.pipe(
+      concatMap((user: IUser) => this.http.put<void>(`${this.usersUrl}/${user.id}`, user).pipe(
+        map(() => user)
+      )),
+      catchError(this.handleError),
+      tap(() => console.log('User updated'))
+    )
   )
 
   updateUser(user: IUser) {

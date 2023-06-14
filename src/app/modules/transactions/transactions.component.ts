@@ -1,17 +1,19 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
 import { TransactionsService } from '../services/transactions.service';
 import { ITransaction } from '@models/transaction';
-import { Observable, combineLatest, debounceTime, map, startWith } from 'rxjs';
+import { Observable, Subject, combineLatest, debounceTime, map, startWith, switchMap, takeUntil } from 'rxjs';
 import { FormBuilder, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TransfersComponent } from '@modules/transfers/transfers.component';
 
+
 @Component({
   selector: 'app-transactions',
   templateUrl: './transactions.component.html',
-  styleUrls: ['./transactions.component.scss']
+  styleUrls: ['./transactions.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class TransactionsComponent {
+export class TransactionsComponent implements OnDestroy {
 
   searchForm = this.fb.group({
     search: this.fb.control('')
@@ -20,6 +22,8 @@ export class TransactionsComponent {
   get searchControl() {
     return this.searchForm.get('search') as FormControl;
   }
+
+  unsubscribe$: Subject<void> = new Subject<void>();
 
   constructor(
     private transactionsService: TransactionsService,
@@ -39,10 +43,20 @@ export class TransactionsComponent {
       data: { modal: true },
     });
 
-    dialogRef.afterClosed().subscribe((transaction: ITransaction) => {
-      console.log('The dialog was closed', transaction);
-      this.transactionsService.addTransaction(transaction);
-    });
+    // dialogRef.afterClosed().pipe(takeUntil(this.unsubscribe$)).subscribe((transaction: ITransaction) => {
+    //   console.log('The dialog was closed', transaction);
+    //   this.transactionsService.addTransaction(transaction);
+    // });
+
+    dialogRef.afterClosed().pipe(
+      switchMap((transaction: ITransaction) => this.transactionsService.transactionModifiedAction$.pipe(
+        map(() => transaction)
+      ))
+    )
   }
 
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
+  }
 }

@@ -1,18 +1,16 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IUser } from '@models/user';
 import { UsersService } from '@modules/services/users.service';
-import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-user',
   templateUrl: './user.component.html',
-  styleUrls: ['./user.component.scss']
+  styleUrls: ['./user.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class UserComponent implements OnInit, OnDestroy {
-
-  unsubscribe$: Subject<void> = new Subject<void>();
+export class UserComponent {
 
   userForm = this.fb.group({
     id: this.fb.control(0, [Validators.required]),
@@ -20,33 +18,26 @@ export class UserComponent implements OnInit, OnDestroy {
     lastName: this.fb.control('', [Validators.required]),
     email: this.fb.control('', [Validators.required]),
     address: this.fb.control('', [Validators.required]),
-  })
+  });
+
+  user$ = this.userService.user$;
 
   constructor(
     private fb: FormBuilder,
     private userService: UsersService,
     private router: Router
-  ) {}
+  ) {
+    this.user$.subscribe((user: IUser) => {
+      this.patch(user);
+    })
+  }
 
-  ngOnInit(): void {
-    this.userService.user$.pipe(
-      takeUntil(this.unsubscribe$)
-    ).subscribe((user: IUser) => {
-      this.userForm.patchValue({ ...user });
-    });
+  patch(user: IUser) {
+    this.userForm.patchValue({ ...user });
   }
 
   saveUser() {
     const userUpdated = this.userForm.value as IUser;
-    // this.userService.putUser(userUpdated).pipe(
-    //   takeUntil(this.unsubscribe$)
-    // ).subscribe(() => {
-    //   // Additional actions
-    // })
-  }
-
-  ngOnDestroy(): void {
-    this.unsubscribe$.next();
-    this.unsubscribe$.complete();
+    this.userService.updateUser(userUpdated);
   }
 }
