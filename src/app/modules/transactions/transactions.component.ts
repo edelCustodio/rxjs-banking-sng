@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
 import { TransactionsService } from '../services/transactions.service';
 import { ITransaction } from '@models/transaction';
-import { Observable, Subject, combineLatest, debounceTime, map, startWith, switchMap, takeUntil } from 'rxjs';
+import { Observable, Subject, combineLatest, debounceTime, finalize, map, startWith, switchMap, takeUntil } from 'rxjs';
 import { FormBuilder, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TransfersComponent } from '@modules/transfers/transfers.component';
@@ -43,16 +43,12 @@ export class TransactionsComponent implements OnDestroy {
       data: { modal: true },
     });
 
-    // dialogRef.afterClosed().pipe(takeUntil(this.unsubscribe$)).subscribe((transaction: ITransaction) => {
-    //   console.log('The dialog was closed', transaction);
-    //   this.transactionsService.addTransaction(transaction);
-    // });
-
     dialogRef.afterClosed().pipe(
-      switchMap((transaction: ITransaction) => this.transactionsService.transactionModifiedAction$.pipe(
-        map(() => transaction)
-      ))
-    )
+      takeUntil(this.unsubscribe$)
+    ).subscribe((transaction: ITransaction) => {
+      console.log('The dialog was closed', transaction);
+      this.transactionsService.addTransaction(transaction);
+    });
   }
 
   ngOnDestroy(): void {
