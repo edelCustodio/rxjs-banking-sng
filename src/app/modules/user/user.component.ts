@@ -3,6 +3,7 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IUser } from '@models/user';
 import { UsersService } from '@modules/services/users.service';
+import { distinctUntilChanged, tap } from 'rxjs';
 
 @Component({
   selector: 'app-user',
@@ -20,17 +21,15 @@ export class UserComponent {
     address: this.fb.control('', [Validators.required]),
   });
 
-  user$ = this.userService.user$;
+  user$ = this.userService.user$.pipe(
+    tap((user: IUser) => this.patch(user))
+  );
 
   constructor(
     private fb: FormBuilder,
     private userService: UsersService,
     private router: Router
-  ) {
-    this.user$.subscribe((user: IUser) => {
-      this.patch(user);
-    })
-  }
+  ) { }
 
   patch(user: IUser) {
     this.userForm.patchValue({ ...user });

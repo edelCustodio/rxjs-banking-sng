@@ -43,6 +43,8 @@ export class UsersService {
       catchError(this.handleError),
       tap(() => console.log('User updated'))
     )
+  ).pipe(
+    shareReplay(1)
   )
 
   updateUser(user: IUser) {
