@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ETransactionType, ITranfer, ITransaction } from '@models/transaction';
 import { TransferService } from '@modules/services/transfer.service';
 import { UsersService } from '@modules/services/users.service';
-import { Observable, Subject, combineLatest, concatMap, fromEvent, map, takeUntil, tap } from 'rxjs';
+import { Observable, Subject, combineLatest, concatMap, filter, fromEvent, map, merge, switchMap, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-transfers',
@@ -18,12 +18,24 @@ export class TransfersComponent implements OnDestroy {
 
   unsubscribe$: Subject<void> = new Subject<void>();
 
+  protected buttonTransferSubject = new Subject<void>();
+  buttonTransfer$ = this.buttonTransferSubject.asObservable();
+
   transferForm = this.fb.group({
     from: this.fb.control(0, [Validators.required]),
     to: this.fb.control(0, [Validators.required]),
     date: this.fb.control('', [Validators.required]),
     amount: this.fb.control(0, [Validators.required]),
   });
+
+  transaction$ = combineLatest([
+    this.userService.userLoggedIn$.pipe(tap(() => console.log('userLoggedIn$'))),
+    this.transferForm.valueChanges.pipe(tap(() => console.log('transferForm')))
+  ]).pipe(
+    tap(() => console.log('transaction$')),
+    map(([userLoggedIn, transaction]) => ({ ...transaction, userId: userLoggedIn.user.id } as ITransaction))
+  )
+
 
   constructor (
     private fb: NonNullableFormBuilder,
@@ -32,7 +44,15 @@ export class TransfersComponent implements OnDestroy {
     private router: Router,
     public dialogRef: MatDialogRef<TransfersComponent, ITransaction>,
     @Inject(MAT_DIALOG_DATA) public data: { modal: boolean },
-  ) {}
+  ) {
+
+    this.buttonTransfer$.pipe(
+      tap(() => console.log('button click')),
+      switchMap(() => this.transaction$),
+      tap((transaction) => console.log(transaction)),
+      switchMap((transaction) => this.transferService.postTransaction(transaction))
+    ).subscribe(() => this.router.navigate(['/transactions']));
+  }
 
 
   transfer() {

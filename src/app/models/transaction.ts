@@ -1,3 +1,4 @@
+import { FormControl } from "@angular/forms";
 import { EMerchantType } from "./merchant";
 
 export interface ITransaction {
@@ -27,4 +28,12 @@ export interface ITranfer {
   to: number;
   date: string;
   amount: number;
+}
+
+
+export interface ITranferForm {
+  from: FormControl<number>;
+  to: FormControl<number>;
+  date: FormControl<string>;
+  amount: FormControl<number>;
 }
