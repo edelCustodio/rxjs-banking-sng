@@ -82,7 +82,7 @@ export class TransfersComponent implements OnDestroy {
     } else {
       this.userService.userLoggedIn$.pipe(
         map(({user}) => ({ ...transaction, userId: user.id } as ITransaction)),
-        concatMap((transaction) => this.transferService.postTransaction(transaction)),
+        switchMap((transaction) => this.transferService.postTransaction(transaction)),
         takeUntil(this.unsubscribe$)
       ).subscribe(() => this.router.navigate(['/transactions']));
     }
