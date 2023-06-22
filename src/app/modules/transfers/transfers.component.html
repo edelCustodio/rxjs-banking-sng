@@ -29,10 +29,13 @@
       </mat-form-field>
     </form>
     <div class="transfer-buttons">
-      <!-- (click)="transfer()" -->
-      <button
-        (click)="buttonTransferSubject.next()"
+      <!--
+        (click)="transfer()"
         [disabled]="!transferForm.valid"
+       -->
+      <button
+        (click)="transfer()"
+
         mat-raised-button
         color="primary">
         Tranfer

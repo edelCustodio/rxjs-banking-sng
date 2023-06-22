@@ -6,7 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { ETransactionType, ITranfer, ITransaction } from '@models/transaction';
 import { TransferService } from '@modules/services/transfer.service';
 import { UsersService } from '@modules/services/users.service';
-import { Observable, Subject, combineLatest, concatMap, filter, fromEvent, map, merge, switchMap, takeUntil, tap } from 'rxjs';
+import { Observable, Subject, combineLatest, concatMap, filter, fromEvent, map, merge, startWith, switchMap, takeUntil, tap } from 'rxjs';
 
 @Component({
   selector: 'app-transfers',
@@ -28,12 +28,24 @@ export class TransfersComponent implements OnDestroy {
     amount: this.fb.control(0, [Validators.required]),
   });
 
+  form$ = this.buttonTransfer$.pipe(
+    switchMap(() => this.transferForm.valueChanges.pipe(startWith(this.transferForm.value))),
+    filter((a) => this.transferForm.valid),
+    map(form => ({
+      accountId: form.from,
+      amount: +form.amount!.toString().replace(/[^0-9.]/g, ''),
+      date: form.date,
+      merchantId: +form.to!,
+      transactionType: ETransactionType.TRANSFER
+    } as ITransaction))
+  )
+
   transaction$ = combineLatest([
     this.userService.userLoggedIn$.pipe(tap(() => console.log('userLoggedIn$'))),
-    this.transferForm.valueChanges.pipe(tap(() => console.log('transferForm')))
+    this.form$.pipe(tap(() => console.log('transferForm')))
   ]).pipe(
     tap(() => console.log('transaction$')),
-    map(([userLoggedIn, transaction]) => ({ ...transaction, userId: userLoggedIn.user.id } as ITransaction))
+    map(([{ user }, transaction]) => ({ ...transaction, userId: user.id } as ITransaction))
   )
 
 
@@ -46,16 +58,16 @@ export class TransfersComponent implements OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: { modal: boolean },
   ) {
 
-    this.buttonTransfer$.pipe(
-      tap(() => console.log('button click')),
-      switchMap(() => this.transaction$),
-      tap((transaction) => console.log(transaction)),
-      switchMap((transaction) => this.transferService.postTransaction(transaction))
+    this.transaction$.pipe(
+      switchMap((transaction) => this.transferService.postTransaction(transaction)),
+      takeUntil(this.unsubscribe$),
     ).subscribe(() => this.router.navigate(['/transactions']));
   }
 
 
   transfer() {
+    if (!this.transferForm.valid) return;
+
     const dataTransfer = this.transferForm.value as ITranfer;
     const transaction: ITransaction = {
       accountId: dataTransfer.from,
@@ -74,8 +86,6 @@ export class TransfersComponent implements OnDestroy {
         takeUntil(this.unsubscribe$)
       ).subscribe(() => this.router.navigate(['/transactions']));
     }
-
-
   }
 
   ngOnDestroy(): void {

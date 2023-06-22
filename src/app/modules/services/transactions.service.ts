@@ -63,6 +63,7 @@ export class TransactionsService {
       concatMap(operation => this.saveTransaction(operation))
     )
   ).pipe(
+    tap(data => console.log('transactionsWithCRUD: ', JSON.stringify(data))),
     scan((acc, value) => (value instanceof Array) ? [ ...value ] : this.modifyTransactions(acc, value), [] as ITransaction[]),
     map((transactions) => transactions.sort((a, b) => (Date.parse((new Date(b.date).toString())) - Date.parse((new Date(a.date)).toString())))),
     tap(data => console.log('transactionsWithCRUD: ', JSON.stringify(data))),
