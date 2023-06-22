@@ -17,16 +17,14 @@ export class MerchantsService {
 
   merchants$ = this.http.get<IMerchant[]>(this.merchantsUrl)
   .pipe(
-    shareReplay(1),
-    tap(data => console.log('Merchants: ', JSON.stringify(data))),
-    catchError(this.handleError)
+    catchError(this.handleError),
+    shareReplay(1)
   );
 
   merchantTypes$ = this.http.get<IMerchant[]>(this.merchantsTypeUrl)
   .pipe(
-    shareReplay(1),
-    tap(data => console.log('MerchantTypes: ', JSON.stringify(data))),
-    catchError(this.handleError)
+    catchError(this.handleError),
+    shareReplay(1)
   );
 
   merchantsWithTypes$ = combineLatest([

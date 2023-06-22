@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { IAccount } from '@models/account';
-import { Observable, catchError, mergeMap, shareReplay, tap, throwError } from 'rxjs';
+import { Observable, catchError, mergeMap, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { UsersService } from './users.service';
 
 @Injectable({
@@ -18,10 +18,10 @@ export class AccountsService {
 
   accountById$ = this.usersService.userLoggedIn$
   .pipe(
-    mergeMap((userloggedIn) => this.http.get<IAccount>(`${this.accountsUrl}/${userloggedIn.userAccounts[0].accountId}`)),
-    tap(data => console.log('Account by Id: ', JSON.stringify(data))),
+    switchMap((userloggedIn) => this.http.get<IAccount>(`${this.accountsUrl}/${userloggedIn.userAccounts[0].accountId}`)),
+    catchError(this.handleError),
     shareReplay(1),
-    catchError(this.handleError)
+
   )
 
 

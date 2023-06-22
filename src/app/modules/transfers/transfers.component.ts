@@ -41,10 +41,9 @@ export class TransfersComponent implements OnDestroy {
   )
 
   transaction$ = combineLatest([
-    this.userService.userLoggedIn$.pipe(tap(() => console.log('userLoggedIn$'))),
-    this.form$.pipe(tap(() => console.log('transferForm')))
+    this.userService.userLoggedIn$,
+    this.form$
   ]).pipe(
-    tap(() => console.log('transaction$')),
     map(([{ user }, transaction]) => ({ ...transaction, userId: user.id } as ITransaction))
   )
 

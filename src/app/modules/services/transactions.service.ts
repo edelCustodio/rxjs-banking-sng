@@ -30,8 +30,7 @@ export class TransactionsService {
 
   transactions$ = this.http.get<ITransaction[]>(this.transactionsUrl)
   .pipe(
-    tap(data => console.log('Transactions: ', JSON.stringify(data))),
-    catchError(this.handleError)
+    catchError(this.handleError),
   );
 
   catalogs$ = combineLatest([
@@ -40,7 +39,6 @@ export class TransactionsService {
     this.accountsService.accountById$
   ]).pipe(
     map(([userLoggedIn, merchants, account]) => ({ userLoggedIn, merchants, account } as TCatalog)),
-    shareReplay(1)
   )
 
   transactionsWithAllData$ = combineLatest([
@@ -51,22 +49,22 @@ export class TransactionsService {
     map(([transactions, { userLoggedIn, merchants, account }]) => transactions.map(
       (transaction: ITransaction) => (this.mapTransaction(transaction, userLoggedIn.user, merchants, account)))
     ),
-    tap(data => console.log('transactionsWithAllData: ', JSON.stringify(data)))
+    shareReplay(1)
   )
 
   transactionsWithCRUD$ = merge(
     this.transactionsWithAllData$,
     this.transactionModifiedAction$.pipe(
-      tap(data => console.log('transactionModifiedAction: ', JSON.stringify(data))),
-      concatMap(operation => this.usersService.userLoggedIn$.pipe(map(({ user }) => ( { ...operation, item: { ...operation.item, userId: user.id } } as IAction<ITransaction>)))),
-      tap(data => console.log('transactionModifiedAction with User: ', JSON.stringify(data))),
+      switchMap(operation => this.usersService.userLoggedIn$
+        .pipe(
+          map(({ user }) => ( { ...operation, item: { ...operation.item, userId: user.id } } as IAction<ITransaction>))
+        )
+      ),
       concatMap(operation => this.saveTransaction(operation))
     )
   ).pipe(
-    tap(data => console.log('transactionsWithCRUD: ', JSON.stringify(data))),
     scan((acc, value) => (value instanceof Array) ? [ ...value ] : this.modifyTransactions(acc, value), [] as ITransaction[]),
-    map((transactions) => transactions.sort((a, b) => (Date.parse((new Date(b.date).toString())) - Date.parse((new Date(a.date)).toString())))),
-    tap(data => console.log('transactionsWithCRUD: ', JSON.stringify(data))),
+    map((transactions) => transactions.sort((a, b) => (Date.parse((new Date(b.date).toString())) - Date.parse((new Date(a.date)).toString()))))
   )
 
   private saveTransaction(operation: IAction<ITransaction>): Observable<IAction<ITransaction>> {
