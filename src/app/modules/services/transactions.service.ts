@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ITransaction } from '@models/transaction';
-import { Observable, Subject, catchError, combineLatest, concatMap, finalize, map, merge, mergeMap, of, scan, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { Observable, Subject, catchError, combineLatest, concatMap, finalize, map, merge, mergeMap, of, retry, scan, shareReplay, switchMap, tap, throwError, timer } from 'rxjs';
 import { UsersService } from './users.service';
 import { MerchantsService } from './merchants.service';
 import { AccountsService } from './accounts.service';
@@ -31,6 +31,14 @@ export class TransactionsService {
   transactions$ = this.http.get<ITransaction[]>(this.transactionsUrl)
   .pipe(
     catchError(this.handleError),
+    // catchError(() => of([])), // fallback
+    // finalize(() => console.log("finalize() block executed")),
+    // retry(3)
+    // retry({ count: 3, delay: 2000 })
+    // retry({
+    //   count:3,
+    //   delay:(err, attempt) => timer(1000 * attempt)
+    // }) // Will delay 1 second first, then 2 seconds then 3 seconds
   );
 
   catalogs$ = combineLatest([
@@ -133,7 +141,9 @@ export class TransactionsService {
       errorMessage = `Backend returned code ${err.status}: ${err.message}`;
     }
     console.error(err);
-    return throwError(() => errorMessage);
+
+    // return of([]); // fallback values
+    return throwError(() => errorMessage); // rethrowing the error
   }
 }
 
