@@ -31,6 +31,7 @@ export class TransactionsService {
   transactions$ = this.http.get<ITransaction[]>(this.transactionsUrl)
   .pipe(
     catchError(this.handleError),
+    tap(data => console.log('Transactions: ', data))
     // catchError(() => of([])), // fallback
     // finalize(() => console.log("finalize() block executed")),
     // retry(3)
@@ -57,7 +58,7 @@ export class TransactionsService {
     map(([transactions, { userLoggedIn, merchants, account }]) => transactions.map(
       (transaction: ITransaction) => (this.mapTransaction(transaction, userLoggedIn.user, merchants, account)))
     ),
-    shareReplay(1)
+    // shareReplay(1)
   )
 
   transactionsWithCRUD$ = merge(

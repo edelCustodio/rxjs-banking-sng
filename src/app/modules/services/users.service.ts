@@ -20,7 +20,7 @@ export class UsersService {
 
   getUser$ = this.http.get<IUser>(`${this.usersUrl}/1`)
   .pipe(
-    tap(data => console.log('User: ', JSON.stringify(data))),
+    tap(data => console.log('User: ', data)),
     catchError(this.handleError)
   );
 
@@ -28,7 +28,7 @@ export class UsersService {
   .pipe(
     switchMap((user: IUser) => this.http.get<IUserAccount[]>(`${this.userAccountsUrl}?userId=${user.id}`)
     .pipe(
-      tap(data => console.log('UserAccounts: ', JSON.stringify(data))),
+      tap(data => console.log('UserAccounts: ', data)),
       map((userAccounts: IUserAccount[]) => ({ user, userAccounts }))
     )),
     shareReplay(1)
